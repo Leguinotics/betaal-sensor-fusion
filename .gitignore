@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+.streamlit/
+*.log
+betaal_security_events.log

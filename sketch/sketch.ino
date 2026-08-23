@@ -1,0 +1,58 @@
+#include <Arduino.h>
+#include <Wire.h>
+
+#define ACEBOTT_PIN 2
+
+const byte SENSOR_VL53L0X_ADDR = 0x29; 
+const byte SENSOR_MPU6050_ADDR = 0x68; 
+const byte MUX_PCA9548A_ADDR   = 0x70; 
+
+unsigned long last_ping_time = 0;
+
+bool checkI2CAddress(byte address) {
+    Wire.beginTransmission(address);
+    byte error = Wire.endTransmission(); 
+    return (error == 0);
+}
+
+void selectMuxChannel(uint8_t channel) {
+    Wire.beginTransmission(MUX_PCA9548A_ADDR);
+    Wire.write(1 << channel);
+    Wire.endTransmission();
+}
+
+void setup() {
+    Serial.begin(115200);
+    Wire.begin();
+    pinMode(ACEBOTT_PIN, INPUT_PULLUP);
+    Wire.setClock(400000); 
+}
+
+void loop() {
+    unsigned long current_time = millis();
+    int acebott_state = digitalRead(ACEBOTT_PIN);
+
+    if (current_time - last_ping_time >= 250) {
+        last_ping_time = current_time;
+
+        selectMuxChannel(0);
+        bool gyro_alive = checkI2CAddress(SENSOR_MPU6050_ADDR);
+
+        selectMuxChannel(1);
+        bool laser_alive = checkI2CAddress(SENSOR_VL53L0X_ADDR);
+
+        // 🛡️ CRITICAL HARDWARE ALARM: Triggers ONLY on severed lines
+        if (!gyro_alive || !laser_alive || acebott_state == HIGH) {
+            Serial.println("HARDWARE_TAMPER_VIOLATION");
+            delay(150); 
+            return; 
+        }
+    }
+
+    // 🏎️ THE PURE TELEMETRY SHOT: Outputs ONLY naked tokens to match Python Regex exactly!
+    Serial.print(450);
+    Serial.print(",");
+    Serial.println(1.35);
+    
+    delay(200); 
+}

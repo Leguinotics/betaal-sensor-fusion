@@ -1,0 +1,5 @@
+name: betaal
+description: ""
+ports: []
+bricks:
+- arduino:streamlit_ui: {}
